@@ -1,0 +1,113 @@
+{
+  "secrets": {
+    "username": "username@example.com",
+    "password": "example_password",
+    "use_AI": true,
+    "ai_provider": "grok",
+    "llm_model": "llama-3.3-70b-versatile",
+    "llm_api_key": "{Get API key from console.groq.com to use both models}",
+    "llm_api_url": "https://api.groq.com/openai/v1",
+    "ai_apis": [
+      {
+        "id": "grok_gpt_oss_120b",
+        "provider": "grok",
+        "model": "openai/gpt-oss-120b",
+        "api_key": "{Get API key from console.groq.com to use both models}",
+        "api_url": "https://api.groq.com/openai/v1",
+        "verified": true,
+        "enabled": true
+      },
+      {
+        "id": "grok_llama_3_3_70b",
+        "provider": "grok",
+        "model": "llama-3.3-70b-versatile",
+        "api_key": "{Get API key from console.groq.com to use both models}",
+        "api_url": "https://api.groq.com/openai/v1",
+        "verified": true,
+        "enabled": true
+      }
+    ]
+  },
+  "settings": {
+    "showAiErrorAlerts": true,
+    "follow_companies": false,
+    "safe_mode": true,
+    "ai_score_threshold": 55,
+    "run_in_background": false,
+    "close_tabs": false,
+    "auto_manage_driver": true,
+    "click_gap": 1,
+    "keep_screen_awake": true
+  },
+  "personals": {
+    "first_name": "",
+    "middle_name": "",
+    "last_name": "",
+    "phone_number": "",
+    "current_city": "",
+    "street": "",
+    "state": "",
+    "zipcode": "",
+    "country": "",
+    "ethnicity": "",
+    "gender": "",
+    "disability_status": "",
+    "veteran_status": ""
+  },
+  "questions": {
+    "years_of_experience": "1",
+    "us_citizenship": "Indian Citizen",
+    "desired_salary": 2500000,
+    "current_ctc": 2150000,
+    "notice_period": 0,
+    "linkedIn": "",
+    "website": "",
+    "default_resume_path": "",
+    "linkedin_headline": "",
+    "linkedin_summary": "",
+    "cover_letter": "",
+    "recent_employer": "",
+    "confidence_level": "",
+    "overwrite_previous_answers": true,
+    "pause_before_submit": true,
+    "pause_at_failed_question": true,
+    "resume_text": ""
+  },
+  "search": {
+    "search_terms": [
+      "Software Engineer"
+    ],
+    "search_location": "",
+    "date_posted": "Past 24 hours",
+    "experience_level": [],
+    "job_type": [
+      "Full-time"
+    ],
+    "on_site": [
+      "On-site",
+      "Remote",
+      "Hybrid"
+    ],
+    "current_experience": 1,
+    "randomize_search_order": true,
+    "sort_by": "Most recent",
+    "salary": "₹20,00,000+",
+    "did_masters": false,
+    "security_clearance": true,
+    "about_company_bad_words": [],
+    "bad_words": [
+      "US Citizen",
+      "USA Citizen",
+      "No C2C",
+      "No Corp2Corp",
+      ".NET",
+      "PHP",
+      "Ruby",
+      "CNC",
+      "Senior",
+      "Sr."
+    ],
+    "apply_method": "Easy Apply Only",
+    "skipped_domains": []
+  }
+}

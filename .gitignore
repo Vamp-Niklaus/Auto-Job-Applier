@@ -1,0 +1,21 @@
+__pycache__
+.pytest_cache
+.vscode
+.idea
+
+all excels
+all resumes
+logs
+
+old
+
+secrets.py
+config/personals.py
+.venv
+apikeys.py
+
+# Local control-panel runtime files — contain your credentials/answers, never commit
+.bot_run.log
+.bot_run.pid
+venv/
+*.deb
