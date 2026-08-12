@@ -796,8 +796,20 @@ def external_apply(pagination_element: WebElement, job_id: str, job_link: str, r
         from urllib.parse import urlparse
         parsed_url = urlparse(application_link)
         domain = parsed_url.netloc.lower()
+        
+        def clean_domain_str(d: str) -> str:
+            d = d.lower().strip()
+            if "://" in d:
+                d = d.split("://")[1]
+            if d.startswith("www."):
+                d = d[4:]
+            if "/" in d:
+                d = d.split("/")[0]
+            return d
+            
+        clean_url_domain = clean_domain_str(application_link)
         for skip_dom in skipped_domains:
-            if skip_dom.strip().lower() in domain:
+            if clean_domain_str(skip_dom) and clean_domain_str(skip_dom) in clean_url_domain:
                 print_lg(f"Domain '{domain}' matches skip list item '{skip_dom}'. Skipping application.")
                 if driver.current_window_handle != linkedIn_tab:
                     driver.close()
@@ -1009,6 +1021,18 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     print_lg("\n-@-\n")
 
                     try:
+                        card_text = job.text
+                        card_is_easy = "Easy Apply" in card_text
+                        if apply_method == "External Only" and card_is_easy:
+                            print_lg("Skipping Easy Apply job listing since apply_method is External Only.")
+                            continue
+                        if apply_method == "Easy Apply Only" and not card_is_easy:
+                            print_lg("Skipping External job listing since apply_method is Easy Apply Only.")
+                            continue
+                    except:
+                        pass
+
+                    try:
                         job_id,title,company,work_location,work_style,skip = get_job_main_details(job, blacklisted_companies, rejected_jobs)
                     except NoSuchElementException:
                         print_lg("Skipping item in search list — does not look like a valid job card (could be an ad or promotional item).")
@@ -1106,6 +1130,8 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                     if use_AI and description != "Unknown":
                         try:
                             _resume_text = getattr(__import__('config.questions', fromlist=['resume_text']), 'resume_text', '') or ''
+                            from modules.helpers import anonymize_text
+                            _resume_text = anonymize_text(_resume_text)
                             _threshold = int(getattr(__import__('config.settings', fromlist=['ai_score_threshold']), 'ai_score_threshold', 50) or 50)
                             _cand_yrs = float(current_experience) if str(current_experience).replace('.','').isdigit() else 1.0
                             _score, _score_reason = score_job(aiClient, description, _resume_text, _cand_yrs, _threshold)

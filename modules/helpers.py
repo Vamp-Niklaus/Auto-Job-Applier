@@ -236,6 +236,31 @@ def convert_to_lakhs(value: str) -> str:
     return value
 
 
+def anonymize_text(text: str) -> str:
+    '''
+    Replaces sensitive personal details in the resume with dummy placeholder info
+    to protect user privacy when sending data to external LLMs.
+    '''
+    if not text:
+        return ""
+    import re
+    # Replace email
+    text = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', 'johndoe@example.com', text)
+    # Replace phone numbers
+    text = re.sub(r'\+?\d{1,4}[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}', '+91 9999999999', text)
+    # Replace LinkedIn, GitHub, Portfolio URLs
+    text = re.sub(r'https?://(?:www\.)?linkedin\.com/in/[\w\.-]+/?', 'https://www.linkedin.com/in/johndoe/', text)
+    text = re.sub(r'https?://(?:www\.)?github\.com/[\w\.-]+/?', 'https://github.com/johndoe/', text)
+    text = re.sub(r'https?://(?:www\.)?[\w\.-]+\.github\.io/[\w\.-]+/?', 'https://johndoe.github.io/portfolio/', text)
+    
+    # Replace explicit names and personal values
+    text = text.replace("Rakesh Kumar", "John Doe")
+    text = text.replace("Rakesh", "John")
+    text = text.replace("rakeshkumarjnv7364@gmail.com", "johndoe@example.com")
+    text = text.replace("6377003472", "9999999999")
+    return text
+
+
 def convert_to_json(data) -> dict:
     '''
     Convert input string to JSON. Automatically strips markdown code fences

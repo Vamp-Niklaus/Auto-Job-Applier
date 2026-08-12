@@ -54,6 +54,7 @@ salary = ""                        # "$40,000+", "$60,000+", "$80,000+", "$100,0
 
 apply_method = "Easy Apply Only"    # Options: "Easy Apply Only", "External Only", "Both"
 skipped_domains = []                # List of domains to skip external applications for
+external_apply_password = ""        # Default password used for account creation on external sites
 
 experience_level = []              # (multiple select) "Internship", "Entry level", "Associate", "Mid-Senior level", "Director", "Executive"
 job_type = []                      # (multiple select) "Full-time", "Part-time", "Contract", "Temporary", "Volunteer", "Internship", "Other"

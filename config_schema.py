@@ -188,6 +188,8 @@ SCHEMA = [
                options=["Easy Apply Only", "External Only", "Both"]),
             _f("Search", "search", "skipped_domains", "Skip external jobs with these domains", "list",
                "Do not apply to external jobs if they redirect to any of these domains, separated by commas. Example: talent.com, ziprecruiter.com."),
+            _f("Search", "search", "external_apply_password", "Password for external sites", "password",
+               "A default password the bot can use if an external application page requires creating an account."),
             _f("Search", "search", "experience_level", "Experience level", "list",
                "Filter by experience level, comma-separated. Valid values: Internship, Entry level, Associate, Mid-Senior level, Director, Executive. Leave blank for all."),
             _f("Search", "search", "job_type", "Job type", "list",

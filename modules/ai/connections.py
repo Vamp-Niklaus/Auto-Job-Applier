@@ -385,6 +385,10 @@ def answer_question(
     if not client or not question:
         return ""
     
+    if user_information_all:
+        from modules.helpers import anonymize_text
+        user_information_all = anonymize_text(user_information_all)
+        
     attempts = len(client.clients) if hasattr(client, "clients") else 1
     last_err = None
 

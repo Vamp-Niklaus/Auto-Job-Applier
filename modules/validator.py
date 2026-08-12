@@ -122,6 +122,7 @@ def validate_search() -> None | ValueError | TypeError:
 
     check_string(apply_method, "apply_method", ["Easy Apply Only", "External Only", "Both"])
     check_list(skipped_domains, "skipped_domains")
+    check_string(external_apply_password, "external_apply_password")
 
     check_list(experience_level, "experience_level", ["Internship", "Entry level", "Associate", "Mid-Senior level", "Director", "Executive"])
     check_list(job_type, "job_type", ["Full-time", "Part-time", "Contract", "Temporary", "Volunteer", "Internship", "Other"])
