@@ -111,6 +111,68 @@ def fill_external_form(driver: WebDriver, user_config: dict) -> bool:
             except Exception:
                 pass
 
+        # 5. Handle Select Dropdowns
+        from selenium.webdriver.support.ui import Select
+        selects = driver.find_elements(By.XPATH, "//select")
+        for sel in selects:
+            try:
+                if not sel.is_displayed() or not sel.is_enabled():
+                    continue
+                
+                select_obj = Select(sel)
+                try:
+                    curr_val = select_obj.first_selected_option.text
+                    if curr_val and "select" not in curr_val.lower():
+                        continue
+                except:
+                    pass
+                
+                name_attr = (sel.get_attribute("name") or "").lower()
+                id_attr = (sel.get_attribute("id") or "").lower()
+                aria_label = (sel.get_attribute("aria-label") or "").lower()
+                
+                label_text = ""
+                try:
+                    if id_attr:
+                        label_el = driver.find_element(By.XPATH, f"//label[@for='{id_attr}']")
+                        label_text = (label_el.text or "").lower()
+                except:
+                    pass
+                
+                indicators = f"{name_attr} {id_attr} {aria_label} {label_text}"
+                options = [opt.text for opt in select_obj.options]
+                
+                # Visa / Sponsorship
+                if "sponsor" in indicators or "visa" in indicators or "right to work" in indicators or "authorized" in indicators:
+                    for opt in options:
+                        opt_lower = opt.lower()
+                        # User needs visa sponsorship (since they are Indian Citizen applying internationally)
+                        if "require" in indicators and "yes" in opt_lower:
+                            select_obj.select_by_visible_text(opt)
+                            break
+                        elif "authorized" in indicators and "no" in opt_lower:
+                            select_obj.select_by_visible_text(opt)
+                            break
+                        elif "sponsorship" in indicators and "yes" in opt_lower:
+                            select_obj.select_by_visible_text(opt)
+                            break
+
+                # Consent to AI
+                elif "consent" in indicators or "ai" in indicators:
+                    for opt in options:
+                        if "yes" in opt.lower():
+                            select_obj.select_by_visible_text(opt)
+                            break
+
+                # Phone Country Code
+                elif "country" in indicators or "phone" in indicators or "code" in indicators:
+                    for opt in options:
+                        if "india" in opt.lower() or "+91" in opt:
+                            select_obj.select_by_visible_text(opt)
+                            break
+            except Exception:
+                pass
+
         return True
     except Exception as e:
         print(f"Error in fill_external_form: {e}")
