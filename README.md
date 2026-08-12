@@ -57,8 +57,4 @@ start.bat
 - **LinkedIn**: [Rakesh Kumar](https://www.linkedin.com/in/rakesh-d-kumar/)
 - **GitHub**: [Vamp-Niklaus](https://github.com/Vamp-Niklaus)
 
----
 
-## 📄 License
-
-This project is licensed under the **MIT License**.
