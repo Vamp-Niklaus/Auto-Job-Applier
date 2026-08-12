@@ -816,18 +816,28 @@ def external_apply(pagination_element: WebElement, job_id: str, job_link: str, r
                 driver.switch_to.window(linkedIn_tab)
                 return True, application_link, tabs_count
 
-        # Try to fill the external form
+        # Try to solve the external application using the Agentic Solver
         try:
             import json
             if os.path.exists("user_config.json"):
                 with open("user_config.json", "r") as f:
                     user_config = json.load(f)
-                from modules.external_form_filler import fill_external_form
-                print_lg("Attempting to autofill external form fields...")
-                fill_external_form(driver, user_config)
-                time.sleep(5)
+                
+                from modules.external_solver import solve_external_step
+                cand_yrs = float(user_config.get("search", {}).get("current_experience", 1.0))
+                
+                print_lg("Running Agentic External Application Solver...")
+                status = solve_external_step(driver, aiClient, cand_yrs, user_config)
+                
+                if status == "skipped":
+                    if driver.current_window_handle != linkedIn_tab:
+                        driver.close()
+                    driver.switch_to.window(linkedIn_tab)
+                    return True, application_link, tabs_count
+                
+                time.sleep(3)
         except Exception as fef:
-            print_lg(f"Autofill external form failed: {fef}")
+            print_lg(f"Agentic External Solver failed: {fef}")
 
         if close_tabs and driver.current_window_handle != linkedIn_tab: driver.close()
         driver.switch_to.window(linkedIn_tab)

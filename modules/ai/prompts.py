@@ -77,3 +77,23 @@ Job Posting:
 {{job}}
 """
 #<
+
+
+ai_external_classify_prompt = """
+You are an intelligent browser automation guide evaluating an external job application page.
+The candidate has {candidate_years} year(s) of experience.
+
+Analyze the visible text of the page and classify its current state into one of the following JSON states.
+Output ONLY valid JSON, no other text:
+{{"state": "CRITERIA_MISMATCH" | "DESCRIPTION_PAGE" | "FORM_PAGE" | "LOGIN_REGISTRATION" | "SUBMITTED_SUCCESS", "reason": "One short sentence explaining why"}}
+
+Classification Rules:
+1. "CRITERIA_MISMATCH": Use this if the page explicitly states experience requirements that exceed {candidate_years} year(s) by more than 2 years (e.g. requires 4+, 5+, 8+ years, or Senior/Lead/Staff roles), or requires local citizenship/visa support that the candidate does not have.
+2. "DESCRIPTION_PAGE": Use this if the page is primarily a job description or advertisement, and has buttons like "Apply Now", "I'm Interested", "Apply", or "Apply on Company Site", but no input fields yet.
+3. "FORM_PAGE": Use this if the page contains form input fields (like name, email, resume file upload, question text areas).
+4. "LOGIN_REGISTRATION": Use this if the page asks to create an account, log in, or input an email address to register before showing the application form.
+5. "SUBMITTED_SUCCESS": Use this if the page says "Thank you for applying", "Application submitted", "Success", or similar confirmation.
+
+Page Text Content:
+{page_text}
+"""
