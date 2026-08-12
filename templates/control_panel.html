@@ -1104,6 +1104,11 @@
 
                 // Find jobs for selected date
                 var groupJobs = groups[currentSelected] || [];
+                groupJobs.sort(function (a, b) {
+                    var timeA = a.Date_Applied || '';
+                    var timeB = b.Date_Applied || '';
+                    return timeB.localeCompare(timeA);
+                });
                 var groupCount = groupJobs.length;
 
                 var dayName = '';
