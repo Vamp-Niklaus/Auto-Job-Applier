@@ -157,6 +157,15 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
             print_lg("Form fields successfully autofilled.")
         else:
             print_lg("Some form fields could not be filled automatically.")
+        
+        # Trigger dynamic agent to solve custom questions, dropdowns, and click submit
+        try:
+            from modules.dynamic_agent import run_dynamic_agent_loop
+            status = run_dynamic_agent_loop(driver, client, user_config)
+            return status
+        except Exception as dae:
+            print_lg(f"Dynamic Agent execution failed: {dae}")
+            
         return "manual_review"
 
     return "manual_review"
