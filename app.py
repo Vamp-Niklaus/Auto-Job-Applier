@@ -298,7 +298,7 @@ def get_failed_jobs():
 
 
 # --- Custom Jobs Endpoints ---
-_CUSTOM_JOBS_FILE = os.path.join(PATH, 'config', 'custom_jobs.json')
+_CUSTOM_JOBS_FILE = os.path.join(ROOT, 'config', 'custom_jobs.json')
 
 def _load_custom_jobs():
     if not os.path.exists(_CUSTOM_JOBS_FILE):
