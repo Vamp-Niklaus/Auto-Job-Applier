@@ -48,13 +48,29 @@ def createChromeSession(isRetry: bool = False):
         print_lg("Logging in with a guest profile, Web history will not be saved!")
         options.add_argument(f"--user-data-dir={get_default_temp_profile()}")
     if auto_manage_driver:
-        # try: 
-        #     driver = uc.Chrome(driver_executable_path="C:\\Program Files\\Google\\Chrome\\chromedriver-win64\\chromedriver.exe", options=options)
-        # except (FileNotFoundError, PermissionError) as e: 
-        #     print_lg("(auto-managed driver) Got '{}' when using pre-installed ChromeDriver.".format(type(e).__name__))
-            print_lg("Downloading the matching Chrome driver... This may take some time (this happens each run when auto_manage_driver is enabled).")
+        version_main = None
+        try:
+            import subprocess, re
+            output = subprocess.check_output(["google-chrome", "--version"]).decode("utf-8")
+            match = re.search(r"Google Chrome (\d+)\.", output)
+            if match:
+                version_main = int(match.group(1))
+        except Exception:
+            try:
+                output = subprocess.check_output(["google-chrome-stable", "--version"]).decode("utf-8")
+                match = re.search(r"Google Chrome (\d+)\.", output)
+                if match:
+                    version_main = int(match.group(1))
+            except Exception:
+                pass
+        
+        print_lg("Downloading the matching Chrome driver... This may take some time (this happens each run when auto_manage_driver is enabled).")
+        if version_main:
+            print_lg(f"Detected Chrome major version: {version_main}. Requesting matching driver.")
+            driver = uc.Chrome(options=options, version_main=version_main)
+        else:
             driver = uc.Chrome(options=options)
-    else: driver = webdriver.Chrome(options=options) #, service=Service(executable_path="C:\\Program Files\\Google\\Chrome\\chromedriver-win64\\chromedriver.exe"))
+    else: driver = webdriver.Chrome(options=options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 5)
     actions = ActionChains(driver)
