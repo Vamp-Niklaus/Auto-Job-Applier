@@ -145,7 +145,7 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
 
     elif state == "FORM_PAGE":
         print_lg("Application form detected. Running autofill form filler...")
-        fill_success = fill_external_form(driver, user_config)
+        fill_success = fill_external_form(driver, user_config, client=client)
         if fill_success:
             print_lg("Form fields successfully autofilled.")
         else:

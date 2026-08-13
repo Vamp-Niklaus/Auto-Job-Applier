@@ -97,3 +97,27 @@ Classification Rules:
 Page Text Content:
 {page_text}
 """
+
+
+ai_field_resolution_prompt = """
+You are helping an applicant fill in an input field on a job application page.
+Based on the field label, placeholder, type, and options (if any), alongside the applicant's profile data, decide how the field should be answered.
+
+Applicant Profile:
+Candidate Name: {name}
+Email: {email}
+Phone: {phone}
+Location: {location}
+Sponsorship Needed: {sponsorship_needed}
+Desired Salary: {desired_salary}
+Notice Period: {notice_period}
+Resume highlights: {resume_highlights}
+
+Target Field Information:
+Field Label/Context: {field_label}
+Field Type: {field_type}
+Available Options (if dropdown/radio/select): {field_options}
+
+Output ONLY valid JSON, no other text:
+{{"answer": "<what value to type, or which exact option string to select>", "reason": "One short sentence explaining why"}}
+"""

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mock Job Application Form</title>
+</head>
+<body>
+    <h1>Application Mockup</h1>
+    <form id="mock-form">
+        <!-- Standard fields -->
+        <label for="first_name">First Name:</label><br>
+        <input type="text" id="first_name" name="first_name"><br><br>
+
+        <label for="last_name">Last Name:</label><br>
+        <input type="text" id="last_name" name="last_name"><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email"><br><br>
+
+        <!-- Weird / Non-standard fields (to trigger AI learning) -->
+        <label for="screening_protocol">Do you agree to our autonomous screening protocol? (Yes/No)</label><br>
+        <select id="screening_protocol" name="screening_protocol">
+            <option value="">Select Option...</option>
+            <option value="Yes">Yes, I agree</option>
+            <option value="No">No, I do not agree</option>
+        </select><br><br>
+
+        <label for="hobby_question">What is your favorite programming language from the list?</label><br>
+        <select id="hobby_question" name="hobby_question">
+            <option value="">Select Language...</option>
+            <option value="python">Python programming</option>
+            <option value="cobol">Old Cobol</option>
+            <option value="brainfuck">Esoteric languages</option>
+        </select><br><br>
+
+        <label for="feedback_field">Describe in one word how you feel about working remotely:</label><br>
+        <input type="text" id="feedback_field" name="feedback_field" placeholder="One word..."><br><br>
+
+        <button type="submit">Submit Application</button>
+    </form>
+</body>
+</html>
