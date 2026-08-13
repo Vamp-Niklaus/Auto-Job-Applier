@@ -108,47 +108,64 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
 
     elif state == "DESCRIPTION_PAGE":
         print_lg("Navigation/Description page detected. Attempting to click primary 'Apply' button...")
-        try:
-            # Look for common apply/interested buttons
-            apply_xpaths = [
-                # Specific Workday/ATS menu options first
-                "//button[contains(., 'Apply Manually') or contains(., 'apply manually')]",
-                "//a[contains(., 'Apply Manually') or contains(., 'apply manually')]",
-                "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::button",
-                "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::a",
-                
-                # General buttons
-                "//button[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
-                "//a[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
-                "//span[contains(., 'Apply') or contains(., 'Interested')]/parent::button",
-                "//span[contains(., 'Apply') or contains(., 'Interested')]/parent::a"
-            ]
+        
+        apply_xpaths = [
+            # Specific Workday/ATS menu options first
+            "//button[contains(., 'Apply Manually') or contains(., 'apply manually')]",
+            "//a[contains(., 'Apply Manually') or contains(., 'apply manually')]",
+            "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::button",
+            "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::a",
             
-            clicked = False
-            for xpath in apply_xpaths:
-                buttons = driver.find_elements(By.XPATH, xpath)
-                for btn in buttons:
-                    # Avoid clicking social share buttons or unrelated navigation links
-                    btn_text = (btn.text or "").lower()
-                    if "share" in btn_text or "email" in btn_text or "linkedin" in btn_text or "twitter" in btn_text:
-                        continue
-                    if btn.is_displayed() and btn.is_enabled():
-                        # Click via JS for stability
-                        driver.execute_script("arguments[0].click();", btn)
-                        print_lg(f"Clicked navigation button: '{btn.text.strip()}'")
-                        clicked = True
+            # General buttons
+            "//button[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
+            "//a[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
+            "//span[contains(., 'Apply') or contains(., 'Interested')]/parent::button",
+            "//span[contains(., 'Apply') or contains(., 'Interested')]/parent::a"
+        ]
+
+        clicked = False
+        # Try to click with static selectors, allowing retry if page is rendering/changing DOM
+        for attempt in range(2):
+            try:
+                for xpath in apply_xpaths:
+                    buttons = driver.find_elements(By.XPATH, xpath)
+                    for btn in buttons:
+                        try:
+                            btn_text = (btn.text or "").lower()
+                            if "share" in btn_text or "email" in btn_text or "linkedin" in btn_text or "twitter" in btn_text:
+                                continue
+                            if btn.is_displayed() and btn.is_enabled():
+                                driver.execute_script("arguments[0].click();", btn)
+                                print_lg("Clicked navigation button successfully.")
+                                clicked = True
+                                break
+                        except Exception:
+                            # Ignore stale element / click exceptions on specific buttons & continue loop
+                            continue
+                    if clicked:
                         break
-                if clicked:
-                    break
-            
+            except Exception:
+                pass
+                
             if clicked:
-                time.sleep(4) # Wait for page load/transition
+                break
+            time.sleep(2)
+
+        if clicked:
+            time.sleep(4)
+            return solve_external_step(driver, client, candidate_years, user_config, step + 1)
+        else:
+            print_lg("Failed to click navigation button statically. Invoking Dynamic Agent fallback...")
+            try:
+                from modules.dynamic_agent import run_dynamic_agent_loop
+                status = run_dynamic_agent_loop(driver, client, user_config)
+                if status == "applied":
+                    return "applied"
+                # If dynamic agent resolved it or progressed, try to solve the next page state
                 return solve_external_step(driver, client, candidate_years, user_config, step + 1)
-            else:
-                print_lg("No clickable apply button found on description page.")
-        except Exception as err:
-            print_lg(f"Failed to click navigation button: {err}")
-        return "manual_review"
+            except Exception as dae:
+                print_lg(f"Dynamic Agent fallback failed: {dae}")
+            return "manual_review"
 
     elif state == "FORM_PAGE":
         print_lg("Application form detected. Running autofill form filler...")
