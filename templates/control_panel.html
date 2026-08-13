@@ -530,6 +530,13 @@
             tabs.appendChild(runBtn);
             panels.appendChild(buildRunPanel());
 
+            // Extra "User's Jobs" tab
+            var userJobsBtn = el('button', { type: 'button', text: "User's Jobs" });
+            userJobsBtn.dataset.tab = "User's Jobs";
+            userJobsBtn.addEventListener('click', function () { showTab("User's Jobs"); });
+            tabs.appendChild(userJobsBtn);
+            panels.appendChild(buildUserJobsPanel());
+
             wireAi();
             updateModelLists();
             applyAiState();
@@ -547,9 +554,11 @@
             });
             var isRun = (name === 'Run');
             var isAiApi = (name === 'AI API');
-            document.getElementById('savebar').style.display = (isRun || isAiApi) ? 'none' : 'flex';
+            var isUserJobs = (name === "User's Jobs");
+            document.getElementById('savebar').style.display = (isRun || isAiApi || isUserJobs) ? 'none' : 'flex';
             if (isRun) { refreshStatus(); refreshLogs(); loadAppliedJobs(); }
             if (isAiApi) { renderAiApisList(); }
+            if (isUserJobs && window.loadCustomJobs) { window.loadCustomJobs(); }
         }
 
         // ---- AI master switch + model lists ----
@@ -946,6 +955,149 @@
             tableHolder.appendChild(el('p', { class: 'muted-small', text: 'Loading history...' }));
             histWrap.appendChild(tableHolder);
             panel.appendChild(histWrap);
+
+            return panel;
+        }
+
+        function buildUserJobsPanel() {
+            var panel = el('div', { class: 'panel' });
+            panel.dataset.tab = "User's Jobs";
+
+            panel.appendChild(el('div', { class: 'note', html:
+                '<strong>Custom Testing Board</strong>: Add specific job URLs below to test the bot\'s capabilities on them. ' +
+                'When you click Start in the Run tab, the bot will process these custom jobs first before resuming standard searches. ' +
+                'Any failures, exceptions, or mismatch reasons will be reported right here.' }));
+
+            var addBox = el('div', { class: 'runbox', style: 'padding: 20px; display: flex; flex-direction: column; gap: 15px; border-radius: 12px; margin-bottom: 25px;' });
+            
+            var addRow = el('div', { style: 'display: flex; gap: 10px; align-items: center;' });
+            var urlInput = el('input', { type: 'text', placeholder: 'Paste job URL here (LinkedIn job, Greenhouse, SmartRecruiters, etc.)', style: 'flex: 1; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 14px;' });
+            var addBtn = el('button', { class: 'btn', type: 'button', text: 'Add Job Link', style: 'padding: 10px 20px; white-space: nowrap;' });
+            addRow.appendChild(urlInput);
+            addRow.appendChild(addBtn);
+            addBox.appendChild(addRow);
+
+            var controlRow = el('div', { style: 'display: flex; gap: 15px; align-items: center; justify-content: flex-end;' });
+            var retryAllBtn = el('button', { class: 'btn secondary', type: 'button', text: '🔄 Retry All', style: 'padding: 8px 16px; border-radius: 8px;' });
+            var refreshBtn = el('button', { class: 'btn secondary', type: 'button', text: 'Refresh List', style: 'padding: 8px 16px; border-radius: 8px;' });
+            controlRow.appendChild(retryAllBtn);
+            controlRow.appendChild(refreshBtn);
+            addBox.appendChild(controlRow);
+
+            panel.appendChild(addBox);
+
+            panel.appendChild(el('h2', { class: 'section-h', text: 'Custom Job Queue' }));
+            var tableHolder = el('div', { style: 'overflow-x:auto; margin-top:12px; min-height: 100px;' });
+            panel.appendChild(tableHolder);
+
+            function loadCustomJobs() {
+                tableHolder.innerHTML = '';
+                tableHolder.appendChild(el('p', { class: 'muted-small', text: 'Loading custom job list...' }));
+                
+                fetch('/api/custom-jobs')
+                    .then(function (r) { return r.json(); })
+                    .then(function (jobs) {
+                        tableHolder.innerHTML = '';
+                        if (!jobs || jobs.length === 0) {
+                            tableHolder.appendChild(el('p', { class: 'muted-small', text: 'No custom jobs added yet. Paste a link above to get started.' }));
+                            return;
+                        }
+
+                        var table = el('table', { class: 'jobs', style: 'background: #fff; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); width: 100%;' });
+                        var thead = el('thead');
+                        var hr = el('tr');
+                        hr.appendChild(el('th', { text: '#', style: 'width: 40px;' }));
+                        hr.appendChild(el('th', { text: 'Job Link / URL' }));
+                        hr.appendChild(el('th', { text: 'Status', style: 'width: 120px;' }));
+                        hr.appendChild(el('th', { text: 'Details / Failure Reason' }));
+                        hr.appendChild(el('th', { text: 'Action', style: 'width: 80px; text-align: center;' }));
+                        thead.appendChild(hr);
+                        table.appendChild(thead);
+
+                        var tbody = el('tbody');
+                        jobs.forEach(function (job, i) {
+                            var tr = el('tr');
+                            tr.appendChild(el('td', { text: String(i + 1) }));
+                            
+                            var urlTd = el('td');
+                            var shortUrl = job.url.length > 80 ? job.url.substring(0, 80) + '...' : job.url;
+                            var link = el('a', { href: job.url, target: '_blank', text: shortUrl });
+                            urlTd.appendChild(link);
+                            tr.appendChild(urlTd);
+
+                            var statusTd = el('td');
+                            var badgeColor = 'var(--muted)';
+                            if (job.status === 'Success') badgeColor = 'var(--brand)';
+                            else if (job.status === 'Once Tried') badgeColor = '#e05638';
+                            var statusBadge = el('span', {
+                                text: job.status,
+                                style: 'background: ' + badgeColor + '15; color: ' + badgeColor + '; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;'
+                            });
+                            statusTd.appendChild(statusBadge);
+                            tr.appendChild(statusTd);
+
+                            var reasonTd = el('td', { text: job.reason || 'N/A', style: 'font-size: 12px; color: var(--ink);' });
+                            tr.appendChild(reasonTd);
+
+                            var deleteTd = el('td', { style: 'text-align: center;' });
+                            var delBtn = el('button', {
+                                class: 'btn danger',
+                                type: 'button',
+                                text: 'Delete',
+                                style: 'padding: 4px 8px; font-size: 11px; border-radius: 6px;'
+                            });
+                            delBtn.addEventListener('click', function () {
+                                if (confirm('Are you sure you want to delete this link?')) {
+                                    fetch('/api/custom-jobs/delete', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ id: job.id })
+                                    }).then(function () { loadCustomJobs(); });
+                                }
+                            });
+                            deleteTd.appendChild(delBtn);
+                            tr.appendChild(deleteTd);
+
+                            tbody.appendChild(tr);
+                        });
+                        table.appendChild(tbody);
+                        tableHolder.appendChild(table);
+                    })
+                    .catch(function (e) {
+                        tableHolder.innerHTML = '';
+                        tableHolder.appendChild(el('p', { class: 'muted-small', text: 'Error loading custom jobs: ' + e }));
+                    });
+            }
+
+            addBtn.addEventListener('click', function () {
+                var url = urlInput.value.strip ? urlInput.value.strip() : urlInput.value.trim();
+                if (!url) return;
+                fetch('/api/custom-jobs/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.error) {
+                        alert(res.error);
+                    } else {
+                        urlInput.value = '';
+                        loadCustomJobs();
+                    }
+                });
+            });
+
+            retryAllBtn.addEventListener('click', function () {
+                fetch('/api/custom-jobs/retry-all', { method: 'POST' })
+                    .then(function () { loadCustomJobs(); });
+            });
+
+            refreshBtn.addEventListener('click', loadCustomJobs);
+
+            // Fetch list initially
+            loadCustomJobs();
+            window.loadCustomJobs = loadCustomJobs;
 
             return panel;
         }

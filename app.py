@@ -297,6 +297,71 @@ def get_failed_jobs():
         return jsonify({"error": str(e)}), 500
 
 
+# --- Custom Jobs Endpoints ---
+_CUSTOM_JOBS_FILE = os.path.join(PATH, 'config', 'custom_jobs.json')
+
+def _load_custom_jobs():
+    if not os.path.exists(_CUSTOM_JOBS_FILE):
+        return []
+    try:
+        with open(_CUSTOM_JOBS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f).get("jobs", [])
+    except:
+        return []
+
+def _save_custom_jobs(jobs):
+    try:
+        os.makedirs(os.path.dirname(_CUSTOM_JOBS_FILE), exist_ok=True)
+        with open(_CUSTOM_JOBS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({"jobs": jobs}, f, indent=2)
+    except Exception as e:
+        print(f"Error saving custom jobs: {e}")
+
+@app.route('/api/custom-jobs', methods=['GET'])
+def get_custom_jobs():
+    return jsonify(_load_custom_jobs())
+
+@app.route('/api/custom-jobs/add', methods=['POST'])
+def add_custom_job():
+    data = request.json or {}
+    url = data.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "URL cannot be empty"}), 400
+    
+    jobs = _load_custom_jobs()
+    if any(j["url"] == url for j in jobs):
+        return jsonify({"error": "Job URL already exists"}), 400
+        
+    import uuid
+    new_job = {
+        "id": str(uuid.uuid4()),
+        "url": url,
+        "status": "Pending",
+        "reason": ""
+    }
+    jobs.append(new_job)
+    _save_custom_jobs(jobs)
+    return jsonify(new_job), 200
+
+@app.route('/api/custom-jobs/delete', methods=['POST'])
+def delete_custom_job():
+    data = request.json or {}
+    job_id = data.get("id", "")
+    jobs = _load_custom_jobs()
+    updated = [j for j in jobs if j["id"] != job_id]
+    _save_custom_jobs(updated)
+    return jsonify({"success": True}), 200
+
+@app.route('/api/custom-jobs/retry-all', methods=['POST'])
+def retry_all_custom_jobs():
+    jobs = _load_custom_jobs()
+    for j in jobs:
+        j["status"] = "Pending"
+        j["reason"] = ""
+    _save_custom_jobs(jobs)
+    return jsonify({"success": True}), 200
+
+
 @app.route('/applied-jobs/<job_id>', methods=['PUT'])
 def mark_job_applied(job_id):
     """Stamp one job's 'Date Applied' (matched by Job ID) with the current time."""

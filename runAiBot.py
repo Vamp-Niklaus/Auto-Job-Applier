@@ -968,12 +968,183 @@ def discard_job() -> None:
 
 
 
+def process_custom_jobs(applied_jobs, rejected_jobs) -> None:
+    custom_jobs_file = "config/custom_jobs.json"
+    if not os.path.exists(custom_jobs_file):
+        return
+
+    import json
+    try:
+        with open(custom_jobs_file, "r") as f:
+            data = json.load(f)
+    except Exception as e:
+        print_lg(f"Error reading custom jobs file: {e}")
+        return
+
+    jobs = data.get("jobs", [])
+    pending_jobs = [j for j in jobs if j.get("status") == "Pending"]
+    if not pending_jobs:
+        return
+
+    print_lg(f"\n==================== Processing {len(pending_jobs)} Custom User Job(s) First ====================\n")
+
+    # Load configuration
+    user_config = {}
+    if os.path.exists("user_config.json"):
+        try:
+            with open("user_config.json", "r") as f:
+                user_config = json.load(f)
+        except:
+            pass
+
+    cand_yrs = float(user_config.get("search", {}).get("current_experience", 1.0))
+    _resume_text = user_config.get("questions", {}).get("resume_text", "")
+    from modules.helpers import anonymize_text
+    _resume_text = anonymize_text(_resume_text)
+
+    for job in pending_jobs:
+        url = job["url"]
+        print_lg(f"\nProcessing Custom URL: {url}")
+        job["status"] = "Processing..."
+        with open(custom_jobs_file, "w") as f:
+            json.dump({"jobs": jobs}, f, indent=2)
+
+        try:
+            driver.get(url)
+            buffer(5)
+
+            is_linkedin = "linkedin.com" in url.lower()
+
+            if is_linkedin:
+                try:
+                    title = driver.find_element(By.XPATH, "//h1[contains(@class,'t-24') or contains(@class,'job-title')]").text.strip()
+                except:
+                    title = "Unknown Custom LinkedIn Job"
+                try:
+                    company = driver.find_element(By.XPATH, "//div[contains(@class,'job-details')]//a | //a[contains(@href,'/company/')]").text.strip()
+                except:
+                    company = "Unknown Company"
+
+                print_lg(f"Found Custom LinkedIn Job: {title} | {company}")
+
+                description, experience_required, skip, reason, message = get_job_description()
+                if skip:
+                    raise Exception(f"Skipped on LinkedIn: {message}")
+
+                # Score check (Threshold: 30)
+                _score, _score_reason = score_job(aiClient, description, _resume_text, cand_yrs, 30)
+                if _score != -1 and _score < 30:
+                    raise Exception(f"Skipped: AI score is {_score}/100 (< 30). Reason: {_score_reason}")
+
+                # Detect Easy Apply
+                is_easy_apply = False
+                try:
+                    easy_btn = driver.find_element(By.XPATH, ".//button[contains(@class,'jobs-apply-button') and contains(@aria-label, 'Easy')]")
+                    if easy_btn:
+                        is_easy_apply = True
+                except:
+                    pass
+
+                if is_easy_apply:
+                    print_lg("Running LinkedIn Easy Apply solver...")
+                    easy_btn.click()
+                    buffer(3)
+                    questions_list = set()
+                    modal = driver.find_element(By.CLASS_NAME, "jobs-easy-apply-modal")
+                    questions_list = answer_questions(modal, questions_list, "Remote", job_description=description)
+                    
+                    try:
+                        submitted = False
+                        for _ in range(10):
+                            next_btn = try_xp(driver, "//button[contains(@aria-label, 'Next') or contains(., 'Next') or contains(., 'Review')]")
+                            if next_btn:
+                                next_btn.click()
+                                buffer(2)
+                            else:
+                                submit_btn = try_xp(driver, "//button[contains(@aria-label, 'Submit') or contains(., 'Submit')]")
+                                if submit_btn:
+                                    submit_btn.click()
+                                    buffer(3)
+                                    submitted = True
+                                    break
+                                else:
+                                    break
+                        if submitted:
+                            job["status"] = "Success"
+                            job["reason"] = "Applied successfully via Easy Apply."
+                        else:
+                            raise Exception("Form incomplete or failed to find Submit button.")
+                    except Exception as err:
+                        discard_job()
+                        raise err
+                else:
+                    print_lg("LinkedIn job is External. Opening external site...")
+                    try:
+                        apply_button = driver.find_element(By.XPATH, ".//button[contains(@class,'jobs-apply-button')]")
+                        apply_button.click()
+                        buffer(4)
+                        windows = driver.window_handles
+                        driver.switch_to.window(windows[-1])
+                        
+                        from modules.external_solver import solve_external_step
+                        status = solve_external_step(driver, aiClient, cand_yrs, user_config)
+                        if status == "applied":
+                            job["status"] = "Success"
+                            job["reason"] = "Autofilled and submitted successfully."
+                        elif status == "skipped":
+                            job["status"] = "Once Tried"
+                            job["reason"] = "Skipped: Criteria mismatch on external site."
+                        else:
+                            job["status"] = "Once Tried"
+                            job["reason"] = "Autofilled form fields. Manual submission required."
+                    except Exception as err:
+                        raise Exception(f"Failed during external transition: {err}")
+
+            else:
+                print_lg("Direct external job page detected.")
+                page_text = driver.find_element(By.TAG_NAME, "body").text or ""
+                
+                # Score check (Threshold: 30)
+                _score, _score_reason = score_job(aiClient, page_text, _resume_text, cand_yrs, 30)
+                if _score != -1 and _score < 30:
+                    raise Exception(f"Skipped: AI score is {_score}/100 (< 30). Reason: {_score_reason}")
+
+                from modules.external_solver import solve_external_step
+                status = solve_external_step(driver, aiClient, cand_yrs, user_config)
+                if status == "applied":
+                    job["status"] = "Success"
+                    job["reason"] = "Autofilled and submitted successfully."
+                elif status == "skipped":
+                    job["status"] = "Once Tried"
+                    job["reason"] = "Skipped: Criteria mismatch on external site."
+                else:
+                    job["status"] = "Once Tried"
+                    job["reason"] = "Autofilled form fields. Manual review required."
+
+        except Exception as err:
+            print_lg(f"Error processing custom job: {err}")
+            job["status"] = "Once Tried"
+            job["reason"] = str(err)
+
+        with open(custom_jobs_file, "w") as f:
+            json.dump({"jobs": jobs}, f, indent=2)
+
+    print_lg("\n==================== Finished Processing Custom User Jobs ====================\n")
+
+
 # Function to apply to jobs
 def apply_to_jobs(search_terms: list[str]) -> None:
     from modules.stuck_handler import handle_stuck, execute_stuck_action
 
     applied_jobs = get_applied_job_ids()
     rejected_jobs = set()
+    
+    # First, process custom test jobs if any are pending
+    try:
+        process_custom_jobs(applied_jobs, rejected_jobs)
+    except Exception as cje:
+        print_lg(f"Error during custom jobs runner: {cje}")
+        
     blacklisted_companies = set()
     global current_city, failed_count, skip_count, easy_applied_count, external_jobs_count, tabs_count, pause_before_submit, pause_at_failed_question, useNewResume
     current_city = current_city.strip()
