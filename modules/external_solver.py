@@ -111,6 +111,13 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
         try:
             # Look for common apply/interested buttons
             apply_xpaths = [
+                # Specific Workday/ATS menu options first
+                "//button[contains(., 'Apply Manually') or contains(., 'apply manually')]",
+                "//a[contains(., 'Apply Manually') or contains(., 'apply manually')]",
+                "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::button",
+                "//span[contains(., 'Apply Manually') or contains(., 'apply manually')]/parent::a",
+                
+                # General buttons
                 "//button[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
                 "//a[contains(., 'Apply') or contains(., 'Interested') or contains(., 'Start')]",
                 "//span[contains(., 'Apply') or contains(., 'Interested')]/parent::button",
