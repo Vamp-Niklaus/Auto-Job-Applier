@@ -75,6 +75,7 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
     elif state == "LOGIN_REGISTRATION":
         # Attempt to automate email submission or registration
         print_lg("Registration page detected. Filling credentials...")
+        solved = False
         try:
             email_field = driver.find_element(By.XPATH, "//input[@type='email' or contains(@name, 'email') or contains(@id, 'email')]")
             if email_field.is_displayed() and email_field.is_enabled():
@@ -101,10 +102,22 @@ def solve_external_step(driver: WebDriver, client, candidate_years: float, user_
                         break
                 
                 time.sleep(3) # Let page load
+                solved = True
                 return solve_external_step(driver, client, candidate_years, user_config, step + 1)
         except Exception as err:
-            print_lg(f"Failed to auto-solve registration step: {err}")
-        return "manual_review"
+            print_lg(f"Static registration handler failed: {err}")
+            
+        if not solved:
+            print_lg("Invoking Dynamic Agent fallback to solve login/registration...")
+            try:
+                from modules.dynamic_agent import run_dynamic_agent_loop
+                status = run_dynamic_agent_loop(driver, client, user_config)
+                if status == "applied":
+                    return "applied"
+                return solve_external_step(driver, client, candidate_years, user_config, step + 1)
+            except Exception as dae:
+                print_lg(f"Dynamic Agent login fallback failed: {dae}")
+            return "manual_review"
 
     elif state == "DESCRIPTION_PAGE":
         print_lg("Navigation/Description page detected. Attempting to click primary 'Apply' button...")
